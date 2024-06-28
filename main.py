@@ -4,6 +4,7 @@ from io import StringIO, BytesIO
 from dotenv import load_dotenv
 import os
 import datetime
+import logging
 from datetime import date
 from botocore.exceptions import NoCredentialsError
 load_dotenv()
@@ -32,11 +33,13 @@ except NoCredentialsError:
 # Define functions
 
 def workflow():
+    logging.info("Starting workflow")
 
     s3_session = connection_to_s3(
         aws_access_key_id=AWS_ACCESS_KEY_ID,
         aws_secret_access_key=AWS_SECRET_ACCESS_KEY
     )
+    logging.info("Connected to S3")
 
     all_objects_list, source_bucket = get_objects_from_s3(
         input_date=input_date,
@@ -44,20 +47,24 @@ def workflow():
         s3_session=s3_session,
         bucket_name=source_bucket_name
     )
+    logging.info(f"Retrieved {len(all_objects_list)} objects from S3")
 
     df = consolidate_df(
         all_objects_list=all_objects_list, 
         source_bucket=source_bucket, 
         columns_of_interest=columns_of_interest
     )
+    logging.info("Dataframe consolidated")
 
     df = new_columns_and_transformations(df=df)
+    logging.info("New columns added and transformations completed")
 
     write_df_to_s3(
         df=df, 
         s3_session=s3_session, 
         target_bucket_name=target_bucket_name
     )
+    logging.info("Dataframe written to S3")
 
 
 def connection_to_s3(aws_access_key_id, aws_secret_access_key):
